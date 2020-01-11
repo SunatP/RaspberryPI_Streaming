@@ -1,0 +1,144 @@
+# RaspberryPI 4 
+
+Specification :
+
+```bash
+CPU : Broadcom BCM2711 4-Core Cortex-A72(ARM-v8) 64-bit 1.5 GHz
+RAM : 4 GB LPDDR-3200 SDRAM
+GPU : OpenGL ES 3.0 
+WIFI : 2.4 GHz & 5 GHz 
+Audio : BCM2835 ALSA
+Bluetooth : version 5.0 with BLE
+LAN : Gigabit port Ethernet
+Streaming Codec(Decode & Encode) : H.265 (4K60p) & H.264 (FullHD60p decode , FullHD30p encode)
+Power : 5V 3A via Type-C connector also GPIO header 
+```
+
+## Setup WLAN and LAN port
+
+We use WLAN as Access Point(**2.4 GHz**) with integrated LAN port for internet connection
+
+first, we decided to denied interface Wireless port(**WLAN0**) by using nano to edit **dhcpcd.conf **
+
+```bash
+sudo nano /etc/dhcpcd.conf
+```
+then we add this line
+```bash
+denyinterfaces wlan0
+```
+
+next, we will set **static IP** for **WLAN port**
+```bash
+sudo nano /etc/network/interfaces
+```
+we add loopback and **eth0**(Ethernet port 0) to this file and also set static ip .
+```bash
+source-directory /etc/network/interfaces.d
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+
+allow-hotplug wlan0
+iface wlan0 inet static
+    address 192.168.5.1
+    netmask 255.255.255.0
+    network 192.168.5.0
+    broadcast 192.168.5.255
+```
+at this moment we will config the hostapd to broadcast **SSID** and **WIFI** for allow the connection then using this command.
+```bash
+sudo nano /etc/hostapd/hostapd.conf
+```
+next we will add the configuration into this.
+```bash
+interface=wlan0 # wlan0 คือ WIFI
+driver=nl80211 # ชนิดไดร์เวอร์การปล่อยสัญญาณ WIFI 
+ssid=Name of your wish # ชื่อที่อยากจะตั้ง
+hw_mode=g # จะมี 2 โหมด คือ g สำหรับ 2.4 GHz และ a สำหรับ 5 GHz
+channel=6 # ช่องสัญญาณจะมีทั้งหมด 1 ถึง 14 ช่อง
+ieee80211n=1 # การรับรอง แบบ 802.11n
+wmm_enabled=1 # เปิดการรับรอง QoS หรือ Quality of Service
+ht_capab=[HT40][SHORT-GI-20][DSSS_CCK-40] #  HT capabilities
+macaddr_acl=0 # การใช้ filter สำหรับ MAC address
+auth_algs=1 # 1=wpa, 2=wep, 3=both
+ignore_broadcast_ssid=0
+wpa=2 # ใช้แค่ WPA เท่านั้น
+wpa_key_mgmt=WPA-PSK # ใช้การป้องกันความปลอดภัยแบบ WPA-PSK
+wpa_passphrase=Password # รหัสอะไรก็ไดเ
+rsn_pairwise=CCMP # การจับคู่แบบ CCMP 
+```
+After we edit **hostapd.conf** then we will go to edit **hostapd**
+```bash
+sudo nano /etc/default/hostapd
+```
+find **DAEMON_CONF** and replace with
+```bash
+DAEMON_CONF="/etc/hostapd/hostapd.conf"
+```
+
+Next we will config dnsmasq. as I knew it dnsmasq help automatically assigned IP address for new devices connect to our network.
+
+we must move old file of dnsmasq for backup if we config failure by using 
+```bash
+sudo mv /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
+sudo nano /etc/dnsmasq.conf
+```
+then continue by do like this
+```bash
+interface=wlan0 
+listen-address=192.168.5.1
+bind-interfaces 
+server=8.8.8.8
+domain-needed
+bogus-priv
+dhcp-range=192.168.5.100,192.168.5.200,24h
+```
+after config we will reboot ther Raspberry Pi by
+```bash
+sudo reboot
+```
+
+## Setup Packet Forwarding 
+
+we will config this for do the Raspberry Pi as Internet Hotspot, we can share internet from LAN(input) to WIFI(output)
+
+we will config NAT (Network Address Translation) by
+```bash
+sudo nano /etc/sysctl.conf
+```
+then find **#net.ipv4.ip_forward=1** and remove **#** this out like this
+```bash
+net.ipv4.ip_forward=1
+```
+
+then do this line by line 
+```bash
+sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE  
+sudo iptables -A FORWARD -i eth0 -o wlan0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+sudo iptables -A FORWARD -i wlan0 -o eth0 -j ACCEPT
+```
+then we need to start NAT rules by applied for each start up by
+```bash
+sudo sh -c "iptables-save > /etc/iptables.ipv4.nat"
+```
+easy way is config in **etc/rc.local** by
+
+```bash
+sudo nano /etc/rc.local
+```
+add this **iptables-restore < /etc/iptables.ipv4.nat** and make sure correct
+
+```bash
+_IP=$(hostname -I) || true
+if [ "$_IP" ]; then
+    printf "My IP address is %s\n" "$_IP"
+fi
+
+iptables-restore < /etc/iptables.ipv4.nat
+
+exit 0
+```
+then we will reboot again for make sure we can use Raspberry Pi to surf the internet
