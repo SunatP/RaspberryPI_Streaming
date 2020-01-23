@@ -142,3 +142,87 @@ iptables-restore < /etc/iptables.ipv4.nat
 exit 0
 ```
 then we will reboot again for make sure we can use Raspberry Pi to surf the internet
+
+
+## Setup DLNA for streaming multimedia
+
+after we config raspberry pi for connection, we will setup DLNA for streaming multimedia 
+
+first install miniDLNA
+```bash
+sudo apt-get update && sudo apt-get install minidlna
+```
+after installed we will config DLNA for everyone
+
+```bash
+sudo nano /etc/minidlna.conf
+```
+then find **#user=minidlna** and remove **#** out
+```bash
+user=minidlna
+```
+then we will add directory path for streaming multimedia like Photo, Music and Video 
+
+```bash
+media_dir=/var/lib/minidlna
+media_dir=A,/home/pi/Music # A สำหรับ Audio หรือไฟล์เสียง
+media_dir=P,/home/pi/Pictures # P สำหรับ Pictures หรือไฟล์รูปภาพ
+media_dir=V,/home/pi/Videos # V สำหรับ Videos หรือ ไฟล์วีดีโอ
+```
+after we config completed it's has 2 way to start DLNA services
+```bash
+sudo update-rc.d minidlna defaults
+# or
+sudo service minidlna start
+```
+after launch make sure minidlna work by type this in web browser
+```bash
+localhost:8200
+# or 
+IP address that you assigned:8200
+```
+
+we can start DLNA 3 way
+```bash
+sudo /etc/init.d/minidlna start
+sudo /etc/init.d/minidlna stop
+sudo /etc/init.d/minidlna restart
+# or 
+sudo service minidlna force-reload
+```
+
+## Setup Samba or SMB port for upload/download data
+
+we must download and install samba first
+```bash
+sudo apt-get install samba samba-common-bin
+```
+then we will backup **smb.conf** for restore if config failure
+```bash
+sudo cp /etc/samba/smb.conf /etc/samba/smb.conf.bk
+```
+
+then we will config smaba file
+
+```bash
+sudo nano /etc/samba/smb.conf
+```
+
+we will set like this
+
+```bash
+[global]
+netbios name = Pi # ชื่ออะไรก็ได้แหละ
+server string = Raspberry Pi4 # ตรงนี้ตั้งไว้เหมือนอธิบายเกี่ยวกับตัวเซิร์ฟเวอร์
+workgroup = WORKGROUP # ตรงนี้ไว้ใช้สำหรับ windows 
+wins support = yes # Windows Internet Name Service ไม่ใช่ windows 
+
+[HOMEPI] # ชื่อสำหรับไดรฟ์
+comment=Pi shared folder # คอมเม้นท์อะไรก็ได้
+path=/home/pi # ตั้งไว้ตรงไหนก็ได้ให้ user เห็นไฟล์
+browseable=yes # อนุญาตให้เปลี่ยน path ได้
+writeable=yes # อนุญาตให้บันทึกไฟล์หรือเขียนไฟล์ลงไดรฟ์ได้
+only guest=no # อนุญาตสำหรับทุกคน
+create mask=0777 # permission 0777 คือ -rwxrwxrwx
+
+```
