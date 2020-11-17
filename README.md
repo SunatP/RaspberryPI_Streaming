@@ -50,12 +50,13 @@ iface wlan0 inet static
 ```
 at this moment we will config the hostapd to broadcast **SSID** and **WIFI** for allow the connection then using this command.
 ```bash
+sudo apt install hostapd
 sudo nano /etc/hostapd/hostapd.conf
 ```
 next we will add the configuration into this.
 ```bash
 interface=wlan0 # wlan0 คือ WIFI
-driver=nl80211 # ชนิดไดร์เวอร์การปล่อยสัญญาณ WIFI 
+# driver=nl80211 # obsolete 
 ssid=Name of your wish # ชื่อที่อยากจะตั้ง
 hw_mode=g # จะมี 2 โหมด คือ g สำหรับ 2.4 GHz และ a สำหรับ 5 GHz
 channel=6 # ช่องสัญญาณจะมีทั้งหมด 1 ถึง 14 ช่อง
@@ -72,6 +73,8 @@ rsn_pairwise=CCMP # การจับคู่แบบ CCMP
 ```
 After we edit **hostapd.conf** then we will go to edit **hostapd**
 ```bash
+sudo systemctl unmask hostapd
+sudo systemctl enable hostapd
 sudo nano /etc/default/hostapd
 ```
 find **DAEMON_CONF** and replace with
@@ -83,6 +86,7 @@ Next we will config dnsmasq. as I knew it dnsmasq help automatically assigned IP
 
 we must move old file of dnsmasq for backup if we config failure by using 
 ```bash
+sudo apt install dnsmasq
 sudo mv /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
 sudo nano /etc/dnsmasq.conf
 ```
