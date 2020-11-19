@@ -234,3 +234,7 @@ create mask=0777 # permission 0777 คือ -rwxrwxrwx
 systemd-analyze
 
 systemd-analyze blame
+
+# if GUI freeze or glitch 
+
+sudo service lightdm restart
