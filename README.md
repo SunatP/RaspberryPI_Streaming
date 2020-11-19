@@ -230,3 +230,7 @@ only guest=no # อนุญาตสำหรับทุกคน
 create mask=0777 # permission 0777 คือ -rwxrwxrwx
 
 ```
+# boot time analysis
+systemd-analyze
+
+systemd-analyze blame
