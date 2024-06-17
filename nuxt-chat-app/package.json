@@ -18,7 +18,7 @@
     "nuxt": "^2.17.3",
     "sass": "^1.26.5",
     "sass-loader": "^8.0.2",
-    "socket.io": "^2.5.0",
+    "socket.io": "^4.7.5",
     "vue-socket.io": "^3.0.9",
     "vuetify": "^2.2.29"
   },
